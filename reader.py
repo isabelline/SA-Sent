@@ -25,7 +25,7 @@ TEST_DATA_PATH_LABEL = "/user_home/hajung/hate/public_development_en/public_deve
 #TRAIN_DATA_PATH = "./data/2014/Laptop_Train_v2.xml"
 #TEST_DATA_PATH = "./data/2014/Laptops_Test_Gold.xml"
 
-GLOVE_FILE = "./data/glove/glove.840B.300d.txt"
+GLOVE_FILE = "/user_home/hajung/aspect-sa/SA-Sent-master/SA-Sent-master/data/glove.840B.300d.txt"
 OUT_FILE = config.embed_path
 DATA_FILE = config.data_path
 DIC_FILE = config.dic_path
@@ -60,7 +60,7 @@ class Reader():
             sent_id = i
             sent_text = line
             opinion_list = []
-            polarity = labels[0]
+            polarity = labels[i]
             opinion_inst = OpinionInst(None, polarity, None, None)
             opinion_list.append(opinion_inst)
             sent_Inst = SentInst(sent_id, sent_text, None, opinion_list)
@@ -115,11 +115,9 @@ class Reader():
             for opi_i in range(opi_len):
                 opi_inst = sent_inst.opinions[opi_i]
 
-                target = opi_inst.target_text
-                target_tokens = self.tokenize(target)
                 mask = masks[sent_i]
                 label = opi_inst.polarity
-                opi_inst = opi_inst._replace(class_ind = self.label2id[label])
+                opi_inst = opi_inst._replace(class_ind = label)
                 opi_inst = opi_inst._replace(target_mask = mask)
                 opinion_list.append(opi_inst)
             
@@ -132,8 +130,8 @@ class Reader():
         self.train_data = self.read_data(TRAIN_DATA_PATH_TEXT, TRAIN_DATA_PATH_LABEL)
         self.test_data = self.read_data(TEST_DATA_PATH_TEXT, TEST_DATA_PATH_LABEL)
         self.gen_dic()
-        self.to_index(self.train_data, TRAIN_DATA_PATH_LABEL)
-        self.to_index(self.test_data, TEST_DATA_PATH_LABEL)
+        self.to_index(self.train_data, TRAIN_DATA_PATH_MASK)
+        self.to_index(self.test_data, TEST_DATA_PATH_MASK)
         return self.train_data, self.test_data
 
     # shuffle and to batch size
@@ -152,7 +150,6 @@ class Reader():
                 if tokens is None or mask is None or polarity is None: pdb.set_trace()
                 all_triples.append([tokens, mask, polarity])
                 pair_couter[polarity] += 1
-        print pair_couter
 
         if if_batch:
             random.shuffle(all_triples)
@@ -211,7 +208,9 @@ if __name__ == "__main__":
     train, test = reader.read()
 
     train_batch = reader.to_batches(train, True)
-    test_batch = reader.to_batches(test)
+    print(train_batch)
+    test_batch = reader.to_batches(test, True)
+    print(test_batch)
 
     reader.debug_single_sample(train_batch, 0, 0)
     # pdb.set_trace()
@@ -221,6 +220,10 @@ if __name__ == "__main__":
         cPickle.dump([train_batch, test_batch],f)
     
     with codecs.open(DIC_FILE, 'w', encoding="utf-8") as f:
+        reader.id2word = [x.encode('utf-8').strip() for x in reader.id2word]
+        import sys  
+        reload(sys)  
+        sys.setdefaultencoding('utf8')
         cPickle.dump(reader.id2word, f)
         
     reader.gen_vectors_glove()
