@@ -15,8 +15,12 @@ import random
 SentInst = namedtuple("SentenceInstance", "id text text_inds opinions")
 OpinionInst = namedtuple("OpinionInstance", "target_text polarity class_ind target_mask")
 
-TRAIN_DATA_PATH = "./data/2014/Restaurants_Train_v2.xml"
-TEST_DATA_PATH = "./data/2014/Restaurants_Test_Gold.xml"
+TRAIN_DATA_PATH_TEXT = "/user_home/hajung/hate/public_development_en/public_development_en/train_text.txt"
+TRAIN_DATA_PATH_MASK = "/user_home/hajung/hate/public_development_en/public_development_en/train_text_mask.npy"
+TRAIN_DATA_PATH_LABEL = "/user_home/hajung/hate/public_development_en/public_development_en/train_lab.lab"
+TEST_DATA_PATH_TEXT = "/user_home/hajung/hate/public_development_en/public_development_en/dev_text.txt"
+TEST_DATA_PATH_MASK = "/user_home/hajung/hate/public_development_en/public_development_en/dev_text_mask.npy"
+TEST_DATA_PATH_LABEL = "/user_home/hajung/hate/public_development_en/public_development_en/dev_lab.lab"
 
 #TRAIN_DATA_PATH = "./data/2014/Laptop_Train_v2.xml"
 #TEST_DATA_PATH = "./data/2014/Laptops_Test_Gold.xml"
@@ -43,27 +47,21 @@ class Reader():
         self.train_data = None
         self.test_data = None
     
-    def read_data(self, file_name):
+    def read_data(self, file_name, label_file):
         f = codecs.open(file_name, "r", encoding="utf-8")
-        soup = BeautifulSoup(f.read(), "lxml")
-        sentence_tags = soup.find_all("sentence")
+        lines = f.readlines()
+        lines = [x.strip() for x in lines]
+        f = codecs.open(label_file, "r", encoding="utf-8")
+        labels = f.readlines()
+        labels = [int(x.strip()) for x in labels]
 
         sentence_list = []
-        for sent_tag in sentence_tags:
-            sent_id = sent_tag.attrs["id"]
-            sent_text = sent_tag.find("text").contents[0]
+        for i,line in enumerate(lines):
+            sent_id = i
+            sent_text = line
             opinion_list = []
-            try:
-                asp_tag = sent_tag.find_all("aspectterms")[0]
-            except:
-                # print "{0} {1} has no opinions".format(sent_id, sent_text)
-                continue
-            opinion_tags = asp_tag.find_all("aspectterm")
-            for opinion_tag in opinion_tags:
-                term = opinion_tag.attrs["term"]
-                if term not in sent_text: pdb.set_trace()
-                polarity = opinion_tag.attrs["polarity"]
-                opinion_inst = OpinionInst(term, polarity, None, None)
+            polarity = labels[0]
+            opinion_inst = OpinionInst(None, polarity, None, None)
                 opinion_list.append(opinion_inst)
             sent_Inst = SentInst(sent_id, sent_text, None, opinion_list)
             sentence_list.append(sent_Inst)
@@ -101,8 +99,9 @@ class Reader():
         return tokenizer.tokenize(sent_str)
         
     # namedtuple is protected!
-    def to_index(self, data):
+    def to_index(self, data, mask_file):
         sent_len = len(data)
+        masks = np.load(mask_file)
         for sent_i in range(sent_len):
             sent_inst = data[sent_i]
             sent_tokens = self.tokenize(sent_inst.text)
@@ -118,18 +117,8 @@ class Reader():
 
                 target = opi_inst.target_text
                 target_tokens = self.tokenize(target)
-                try:
-                    target_start = sent_tokens.index(target_tokens[0])
-                    target_end = sent_tokens[max(0, target_start - 1):].index(target_tokens[-1])  + max(0, target_start - 1)
-                except:
-                    pdb.set_trace()
-                if target_start < 0 or target_end < 0:  pdb.set_trace()
-                mask = [0] * len(sent_tokens)
-                for m_i in range(target_start, target_end + 1):
-                    mask[m_i] = 1
-
+                mask = masks[sent_i]
                 label = opi_inst.polarity
-                if label == "conflict":  continue  # ignore conflict ones
                 opi_inst = opi_inst._replace(class_ind = self.label2id[label])
                 opi_inst = opi_inst._replace(target_mask = mask)
                 opinion_list.append(opi_inst)
@@ -140,8 +129,8 @@ class Reader():
 
     
     def read(self):
-        self.train_data = self.read_data(TRAIN_DATA_PATH)
-        self.test_data = self.read_data(TEST_DATA_PATH)
+        self.train_data = self.read_data(TRAIN_DATA_PATH_TEXT, TRAIN_DATA_PATH_LABEL)
+        self.test_data = self.read_data(TEST_DATA_PATH_TEXT, TEST_DATA_PATH_LABEL)
         self.gen_dic()
         self.to_index(self.train_data)
         self.to_index(self.test_data)
