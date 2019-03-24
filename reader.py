@@ -62,7 +62,7 @@ class Reader():
             opinion_list = []
             polarity = labels[0]
             opinion_inst = OpinionInst(None, polarity, None, None)
-                opinion_list.append(opinion_inst)
+            opinion_list.append(opinion_inst)
             sent_Inst = SentInst(sent_id, sent_text, None, opinion_list)
             sentence_list.append(sent_Inst)
 
@@ -132,8 +132,8 @@ class Reader():
         self.train_data = self.read_data(TRAIN_DATA_PATH_TEXT, TRAIN_DATA_PATH_LABEL)
         self.test_data = self.read_data(TEST_DATA_PATH_TEXT, TEST_DATA_PATH_LABEL)
         self.gen_dic()
-        self.to_index(self.train_data)
-        self.to_index(self.test_data)
+        self.to_index(self.train_data, TRAIN_DATA_PATH_LABEL)
+        self.to_index(self.test_data, TEST_DATA_PATH_LABEL)
         return self.train_data, self.test_data
 
     # shuffle and to batch size
