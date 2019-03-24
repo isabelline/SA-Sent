@@ -15,10 +15,10 @@ import random
 SentInst = namedtuple("SentenceInstance", "id text text_inds opinions")
 OpinionInst = namedtuple("OpinionInstance", "target_text polarity class_ind target_mask")
 
-TRAIN_DATA_PATH_TEXT = "/user_home/hajung/hate/public_development_en/public_development_en/train_text.txt"
+TRAIN_DATA_PATH_TEXT = "/user_home/hajung/hate/public_development_en/public_development_en/train_text_spacy.txt"
 TRAIN_DATA_PATH_MASK = "/user_home/hajung/hate/public_development_en/public_development_en/train_text_mask.npy"
 TRAIN_DATA_PATH_LABEL = "/user_home/hajung/hate/public_development_en/public_development_en/train_lab.lab"
-TEST_DATA_PATH_TEXT = "/user_home/hajung/hate/public_development_en/public_development_en/dev_text.txt"
+TEST_DATA_PATH_TEXT = "/user_home/hajung/hate/public_development_en/public_development_en/dev_text_spacy.txt"
 TEST_DATA_PATH_MASK = "/user_home/hajung/hate/public_development_en/public_development_en/dev_text_mask.npy"
 TEST_DATA_PATH_LABEL = "/user_home/hajung/hate/public_development_en/public_development_en/dev_lab.lab"
 
@@ -93,9 +93,9 @@ class Reader():
 
     def tokenize(self, sent_str):
         # return word_tokenize(sent_str)
-        sent_str = " ".join(sent_str.split("-"))
-        sent_str = " ".join(sent_str.split("/"))
-        sent_str = " ".join(sent_str.split("!"))
+#        sent_str = " ".join(sent_str.split("-"))
+#        sent_str = " ".join(sent_str.split("/"))
+#        sent_str = " ".join(sent_str.split("!"))
         return tokenizer.tokenize(sent_str)
         
     # namedtuple is protected!
@@ -104,7 +104,8 @@ class Reader():
         masks = np.load(mask_file)
         for sent_i in range(sent_len):
             sent_inst = data[sent_i]
-            sent_tokens = self.tokenize(sent_inst.text)
+#            sent_tokens = self.tokenize(sent_inst.text)
+            sent_tokens = sent_inst.text.split(" ")
             sent_inds = [self.word2id[x] if x in self.word2id else self.word2id[self.UNK] 
                 for x in sent_tokens]
             if sent_inds is None: pdb.set_trace()
@@ -116,6 +117,7 @@ class Reader():
                 opi_inst = sent_inst.opinions[opi_i]
 
                 mask = masks[sent_i]
+                assert len(mask) == len(sent_tokens)
                 label = opi_inst.polarity
                 opi_inst = opi_inst._replace(class_ind = label)
                 opi_inst = opi_inst._replace(target_mask = mask)
@@ -208,9 +210,7 @@ if __name__ == "__main__":
     train, test = reader.read()
 
     train_batch = reader.to_batches(train, True)
-    print(train_batch)
     test_batch = reader.to_batches(test, True)
-    print(test_batch)
 
     reader.debug_single_sample(train_batch, 0, 0)
     # pdb.set_trace()
