@@ -31,7 +31,7 @@ def load_data(data_path, if_utf=False):
     return obj
 
 id2word = load_data(config.dic_path)
-id2label = ["positive", "neutral", "negative"]
+id2label = ["nh", "h"]
 
 def train():
     print config
