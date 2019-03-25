@@ -210,7 +210,7 @@ if __name__ == "__main__":
     train, test = reader.read()
 
     train_batch = reader.to_batches(train, True)
-    test_batch = reader.to_batches(test, True)
+    test_batch = reader.to_batches(test)
 
     reader.debug_single_sample(train_batch, 0, 0)
     # pdb.set_trace()
