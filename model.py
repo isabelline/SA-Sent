@@ -21,7 +21,7 @@ class AspectSent(nn.Module):
         self.lstm = MLSTM(config)
         self.feat2tri = nn.Linear(config.l_hidden_size, 2)
         self.inter_crf = LinearCRF(config)
-        self.feat2label = nn.Linear(config.l_hidden_size, 3)
+        self.feat2label = nn.Linear(config.l_hidden_size, 2)
 
         self.cri = nn.CrossEntropyLoss()
         self.cat_layer.load_vector()
